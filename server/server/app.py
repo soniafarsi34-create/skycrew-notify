@@ -1,6 +1,6 @@
 import requests
 
-API_KEY = "METTI_LA_TUA_API_KEY"
+API_KEY = "e6aeec4548e487f0169847b8e5da9952"
 
 BASE_URL = "http://api.aviationstack.com/v1/flights"
 
