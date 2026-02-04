@@ -4,7 +4,7 @@ import time
 # ====== CONFIG ======
 API_KEY = "e6aeec4548e487f0169847b8e5da9952"
 TELEGRAM_TOKEN = "8450455745:AAFcZ-vgpo8fPh0LoZLepPjU4quGCqHOR7w"
-CHAT_ID = "0"
+CHAT_ID = "1910713459"
 
 CHECK_EVERY = 120  # secondi
 
