@@ -1,46 +1,69 @@
+from flask import Flask, request, render_template_string
 import requests
 
-API_KEY = "e6aeec4548e487f0169847b8e5da9952"
+API_KEY = "LA_TUA_API_KEY"
 
 BASE_URL = "http://api.aviationstack.com/v1/flights"
 
+app = Flask(__name__)
 
-def get_flight(flight):
+HTML = """
+<html>
+<head><title>SkyCrew Notify</title></head>
+<body style="font-family:Arial;text-align:center">
+
+<h2>✈️ SkyCrew Notify</h2>
+
+<form method="post">
+<input name="flight" placeholder="FR1234">
+<button>Check</button>
+</form>
+
+{% if data %}
+<p>Status: {{data.status}}</p>
+<p>From: {{data.from_air}}</p>
+<p>To: {{data.to_air}}</p>
+{% endif %}
+
+</body>
+</html>
+"""
+
+def get_flight(f):
 
     params = {
         "access_key": API_KEY,
-        "flight_iata": flight
+        "flight_iata": f
     }
 
     r = requests.get(BASE_URL, params=params)
 
-    data = r.json()
+    d = r.json()
 
-    if "data" not in data or not data["data"]:
+    if not d.get("data"):
         return None
 
-    f = data["data"][0]
+    f = d["data"][0]
 
-    info = {
+    return {
         "status": f["flight_status"],
-        "from": f["departure"]["airport"],
-        "to": f["arrival"]["airport"],
-        "dep_time": f["departure"]["scheduled"],
-        "arr_time": f["arrival"]["scheduled"]
+        "from_air": f["departure"]["airport"],
+        "to_air": f["arrival"]["airport"]
     }
 
-    return info
+
+@app.route("/", methods=["GET","POST"])
+def home():
+
+    data = None
+
+    if request.method=="POST":
+
+        flight = request.form["flight"]
+
+        data = get_flight(flight)
+
+    return render_template_string(HTML, data=data)
 
 
-if __name__ == "__main__":
-
-    flight = input("Enter flight number (ex: FR1234): ")
-
-    result = get_flight(flight)
-
-    if result:
-        print("✈️ Flight info:")
-        for k, v in result.items():
-            print(k, ":", v)
-    else:
-        print("Flight not found ❌")
+app.run()
