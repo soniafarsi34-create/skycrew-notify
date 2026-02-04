@@ -1,39 +1,42 @@
-from flask import Flask, request, render_template_string
 import requests
+import time
 
-API_KEY = "LA_TUA_API_KEY"
+# ====== CONFIG ======
+API_KEY = "e6aeec4548e487f0169847b8e5da9952"
+TELEGRAM_TOKEN = "8450455745:AAFcZ-vgpo8fPh0LoZLepPjU4quGCqHOR7w"
+CHAT_ID = "0"
+
+CHECK_EVERY = 120  # secondi
+
+# ====================
 
 BASE_URL = "http://api.aviationstack.com/v1/flights"
 
-app = Flask(__name__)
+WATCHED_FLIGHTS = [
+    "FR1234",
+    "FR4321"
+]
 
-HTML = """
-<html>
-<head><title>SkyCrew Notify</title></head>
-<body style="font-family:Arial;text-align:center">
+LAST_STATUS = {}
 
-<h2>✈️ SkyCrew Notify</h2>
 
-<form method="post">
-<input name="flight" placeholder="FR1234">
-<button>Check</button>
-</form>
+def send_telegram(msg):
 
-{% if data %}
-<p>Status: {{data.status}}</p>
-<p>From: {{data.from_air}}</p>
-<p>To: {{data.to_air}}</p>
-{% endif %}
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
 
-</body>
-</html>
-"""
+    data = {
+        "chat_id": CHAT_ID,
+        "text": msg
+    }
 
-def get_flight(f):
+    requests.post(url, data=data)
+
+
+def get_status(flight):
 
     params = {
         "access_key": API_KEY,
-        "flight_iata": f
+        "flight_iata": flight
     }
 
     r = requests.get(BASE_URL, params=params)
@@ -43,27 +46,30 @@ def get_flight(f):
     if not d.get("data"):
         return None
 
-    f = d["data"][0]
-
-    return {
-        "status": f["flight_status"],
-        "from_air": f["departure"]["airport"],
-        "to_air": f["arrival"]["airport"]
-    }
+    return d["data"][0]["flight_status"]
 
 
-@app.route("/", methods=["GET","POST"])
-def home():
+def check():
 
-    data = None
+    for f in WATCHED_FLIGHTS:
 
-    if request.method=="POST":
+        s = get_status(f)
 
-        flight = request.form["flight"]
+        old = LAST_STATUS.get(f)
 
-        data = get_flight(flight)
+        if s and old != s:
 
-    return render_template_string(HTML, data=data)
+            msg = f"✈️ {f} status: {s}"
+
+            send_telegram(msg)
+
+            LAST_STATUS[f] = s
 
 
-app.run()
+print("SkyCrew Notify started ✈️")
+
+while True:
+
+    check()
+
+    time.sleep(CHECK_EVERY)
